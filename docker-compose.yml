@@ -1,0 +1,34 @@
+version: "3"
+services:
+  records-fastapi-db:
+    image: postgres:14
+    ports:
+      - "5433:5432"
+    volumes:
+      - app-db-data:/var/lib/postgresql/data/pgdata
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - POSTGRES_SERVER=records-fastapi-db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=records-fastapi
+    restart: always
+
+  records-fastapi:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    depends_on:
+      - records-fastapi-db
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./:/src
+    environment:
+      - DATABASE_DSN=postgresql://postgres:password@records-fastapi-db:5432/records-fastapi
+      - BACKEND_CORS_ORIGINS=["http://localhost:3000","http://localhost:8000"]
+    command: sh -c "alembic upgrade head && uvicorn --host 0.0.0.0 --port 8001 src.main:app"
+    restart: always
+
+volumes:
+  app-db-data:
